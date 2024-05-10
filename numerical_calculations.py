@@ -88,7 +88,7 @@ def deterministic_patankar_euler(pos_funcs, neg_funcs, diffusion_funcs ,times, i
     return x
 
 
-def deterministic_patankar_euler(pos_funcs, neg_funcs, diffusion_funcs ,times, init_cond):
+def stochastic_patankar_euler(pos_funcs, neg_funcs, diffusion_funcs ,times, init_cond):
 
     x = np.zeros((len(init_cond), len(times)))
     x[:,0] = init_cond
@@ -113,7 +113,72 @@ def deterministic_patankar_euler(pos_funcs, neg_funcs, diffusion_funcs ,times, i
         I = np.random.normal(0 , h, len(init_cond))
 
         x[:,i] = (x_current + positive_increment*h )/(1+ neg_over_x + neg_over_x - diff_over_x
-                                                    + (iff_over_x)**2 ) 
+                                                    + (diff_over_x)**2 ) 
     
     return x
 
+
+
+
+
+## I noticed that I'm doing the functions to calculate EVERY term of the methods, and not only the 
+## next ones. I'll change it right now.
+
+
+
+
+def euler_maruyama_term(pos_funcs, neg_funcs, diffusion_funcs ,time, h, x_current):
+    '''
+    time now is only a value
+    h is the timestep
+    '''
+    t = time
+
+    positive_increment = sum(f(t, x_current) for f in pos_funcs)
+    negative_increment = sum(d(t, x_current) for d in neg_funcs)
+    diffusion_increment = sum(g(t,x_current) for g in diffusion_funcs)
+
+    I = np.random.normal(0 , h, len(init_cond))
+
+    x_current = x_current + positive_increment - negative_increment + diffusion_increment*I
+    
+    return x_current
+
+
+def deterministic_patankar_euler_term(pos_funcs, neg_funcs, diffusion_funcs ,time, h,  x_current):
+
+    t = time
+        
+    positive_increment = sum(f(t, x_current) for f in pos_funcs)
+    negative_increment = sum(d(t, x_current) for d in neg_funcs)
+    diffusion_increment = sum(g(t,x_current) for g in diffusion_funcs)
+    neg_over_x = sum(d(t,x_current)/x_current for d in diffusion_funcs) 
+
+    I = np.random.normal(0 , h, len(init_cond))
+
+    x_current= (x_current + positive_increment*h + diffusion_increment*I)/(1+ neg_over_x) 
+    
+    return x_current
+
+
+def stochastic_patankar_euler_term(pos_funcs, neg_funcs, diffusion_funcs ,time, h, x_current):
+
+    t = time
+
+    positive_increment = sum(f(t, x_current) for f in pos_funcs)
+    neg_over_x = sum(d(t,x_current)/x_current for d in neg_funcs) 
+    diff_over_x = sum(g(t,x_current)/x_current for g in diffusion_funcs)
+
+
+    I = np.random.normal(0 , h, len(init_cond))
+
+    x_current = (x_current + positive_increment*h )/(1+ neg_over_x + neg_over_x - diff_over_x
+                                                + (diff_over_x)**2 ) 
+    
+    return x_current
+
+
+
+def composite_euler_method(pos_funcs, neg_funcs, diffusion_funcs, times, init_cond):    
+    
+    pass
