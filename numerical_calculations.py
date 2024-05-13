@@ -83,7 +83,7 @@ def deterministic_patankar_euler(pos_funcs, neg_funcs, diffusion_funcs ,times, i
 
         I = np.random.normal(0 , h, len(init_cond))
 
-        x[:,i] = (x_current + positive_increment*h + diffusion_increment*I)/(1+ neg_over_x) 
+        x[:,i] = (x_current + positive_increment*h + diffusion_increment*I)/(1+ neg_over_x*h)
     
     return x
 
@@ -112,10 +112,24 @@ def stochastic_patankar_euler(pos_funcs, neg_funcs, diffusion_funcs ,times, init
 
         I = np.random.normal(0 , h, len(init_cond))
 
-        x[:,i] = (x_current + positive_increment*h )/(1+ neg_over_x + neg_over_x - diff_over_x
-                                                    + (diff_over_x)**2 ) 
+        x[:,i] = (x_current + positive_increment*h )/(1+ neg_over_x*h - diff_over_x*I
+                                                    + (diff_over_x*I)**2 ) 
     
     return x
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -170,16 +184,36 @@ def stochastic_patankar_euler_term(pos_funcs, neg_funcs, diffusion_funcs ,time, 
 
     I = np.random.normal(0 , h, len(x_current))
 
-    x_current = (x_current + positive_increment*h )/(1+ neg_over_x *h - diff_over_x
-                                                + (diff_over_x)**2 ) 
+    x_current = (x_current + positive_increment*h )/(1+ neg_over_x *h - diff_over_x*I
+                                                + (diff_over_x*I)**2 ) 
     
     return x_current
 
 
 
-def composite_euler_method(pos_funcs, neg_funcs, diffusion_funcs, times, init_cond):    
+
+############ Algorithms ############################
+
+def euler_method(pos_funcs, neg_funcs, diffusion_funcs, times, h, init_cond):    
     
-    h = times[1] - times[0]
+    x_current = init_cond
+    x = np.zeros((len(times), len(init_cond)))
+
+
+    for i in range(len(times)):
+        time = times[i]
+        
+        emt = euler_maruyama_term(pos_funcs, neg_funcs, diffusion_funcs, time, h, x_current)
+        x[i] = emt
+        x_current = x[i]
+        
+    return x
+    
+
+
+def composite_euler_method(pos_funcs, neg_funcs, diffusion_funcs, times,h, init_cond):    
+    
+
     x_current = init_cond
     x = np.zeros((len(times), len(init_cond)))
 
@@ -190,19 +224,19 @@ def composite_euler_method(pos_funcs, neg_funcs, diffusion_funcs, times, init_co
         dpet = deterministic_patankar_euler_term(pos_funcs, neg_funcs, diffusion_funcs ,time, h,  x_current)
         spet = stochastic_patankar_euler_term(pos_funcs, neg_funcs, diffusion_funcs ,time, h, x_current)
 
-        if np.all(dpet > 0):
+        if np.all(dpet >0):
             x[i] = dpet
-        else: 
-            mask = dpet < 0
+        else:
+            mask = dpet< 0
             dpet[mask] = spet[mask]
-            x[i] =dpet
-
+            x[i] = dpet
+        x_current = x[i]
     return x
     
 
-def fully_composite_euler_method(pos_funcs, neg_funcs, diffusion_funcs, times, init_cond):    
+def fully_composite_euler_method(pos_funcs, neg_funcs, diffusion_funcs, times, h, init_cond):    
     
-    h = times[1] - times[0]
+
     x = np.zeros((len(times), len(init_cond)))
     x_current = init_cond
 
@@ -225,6 +259,7 @@ def fully_composite_euler_method(pos_funcs, neg_funcs, diffusion_funcs, times, i
             emt[mask1] = dpet[mask1]
             mask2 = emt < 0
             emt[mask2] = spet[mask2]
-            x[i] = emt      
+            x[i] = emt  
+        x_current = x[i]    
 
     return x
